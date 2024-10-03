@@ -1,6 +1,6 @@
 WITH oct AS (SELECT order_id, customer_state, taken_time
     FROM
-        (SELECT order_id, customer_id, DATEDIFF(order_delivered_customer_date, order_delivered_carrier_date) AS taken_time
+        (SELECT order_id, customer_id, UNIX_TIMESTAMP(order_delivered_customer_date) - UNIX_TIMESTAMP(order_delivered_carrier_date) AS taken_time
         FROM orders WHERE order_delivered_customer_date NOT LIKE '%0000/00/00 00:00:00%' 
         AND order_delivered_carrier_date NOT LIKE '%0000/00/00 00:00:00%' ) AS ord,
         (SELECT customer_id, customer_state FROM customers) AS cus
