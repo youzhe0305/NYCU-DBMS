@@ -3,7 +3,7 @@ WITH sell AS (
     WHERE price > 150
     GROUP BY seller_id
 )
-SELECT seller_id FROM sell
+SELECT seller_id, cnt FROM sell
 WHERE cnt > 100
 ORDER BY cnt DESC
 LIMIT 3;
