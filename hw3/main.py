@@ -1,15 +1,16 @@
 from flask import Flask, render_template, request, redirect, flash, session
 import mysql.connector
-
+import hashlib
+import sqlalchemy
 # Flask App Initialization
 app = Flask(__name__)
-app.secret_key = "your_secret_key"
+app.secret_key = "nijika"
 
 # Database Configuration
 db_config = {
     'host': 'localhost',  # Change this to your MySQL host
-    'user': 'your_user',  # Change this to your MySQL username
-    'password': 'your_password',  # Change this to your MySQL password
+    'user': 'root',  # Change this to your MySQL username
+    'password': 'root',  # Change this to your MySQL password
     'database': 'hw3'  # Change this to your MySQL database name
 }
 
@@ -27,26 +28,40 @@ def login():
         # TODO # 4: Hash the password using SHA-256
         # password = ???
 
+        sha256_hash = hashlib.sha256()
+        sha256_hash.update(password.encode('utf-8'))
+        password = sha256_hash.hexdigest()
+        
         # Connect to the database
         conn = get_db_connection()
         cursor = conn.cursor()
 
         # TODO # 2. Check if the user exists in the database and whether the password is correct
         # Query to check the user
-        cursor.execute(f"SELECT password FROM users WHERE username = '{username}'")
-        result = cursor.fetchone() # fetchone() returns None if no record is found
-
-        # if ???:
-
-
         
-        # Close the connection
+        try:
+            cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
+        except:
+            flash("Username does not exist.", "danger")
+            # return "Username does not exist", 400
+        
+        result = cursor.fetchone() # fetchone() returns None if no record is found
+        # if ???:  
         cursor.close()
-        conn.close()
-
+        conn.close()        
+        if result == None:
+            flash("Username does not exist.", "danger")
+            # return "Username does not exist", 400
+        elif result[0] == password:
+            session['username'] = username
+            return redirect("/welcome")
+        else:
+            flash("Password is wrong.", "danger")
+            # return "Password is wrong", 400
+        
         # if pass the check, redirect to the welcome page and store the username in the session
-        session['username'] = username
-        return redirect("/welcome") # commit this line after completing TODO # 2
+        # session['username'] = username
+        # return redirect("/welcome") # commit this line after completing TODO # 2
         
     return render_template("login.html")
 
@@ -72,25 +87,26 @@ def signup():
 
         # TODO # 4: Hash the password using SHA-256
         # password = ???
+        sha256_hash = hashlib.sha256()
+        sha256_hash.update(password.encode('utf-8'))
+        password = sha256_hash.hexdigest()
 
         # Connect to the database
         conn = get_db_connection()
         cursor = conn.cursor()
 
-
-
         # TODO # 3: Add the query to insert a new user into the database
-        # try:
-        #     # Insert new user into the database
-        #     cursor.execute(???)
-        #     conn.commit()
-        #     flash("Account created successfully! Please log in.", "success")
-        #     return redirect("/")
-        # except mysql.connector.Error as err:
-        #     flash(f"Error: {err}", "danger")
-        # finally:
-        #     cursor.close()
-        #     conn.close()
+        try:
+            cursor.execute("INSERT INTO users (username, password) \
+                            VALUES (%s, %s);", (username, password))
+            conn.commit()
+            flash("Account created successfully! Please log in.", "success")
+            return redirect("/")
+        except mysql.connector.Error as err:
+            flash(f"Error: {err}", "danger")
+        finally:
+            cursor.close()
+            conn.close()
     
     return render_template("signup.html")
 
